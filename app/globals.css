@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 🎨 Variables base (modo claro) */
+:root {
+  --bg: #ffffff;     /* Fondo blanco */
+  --card: #ffffff;   /* Tarjeta blanca */
+  --text: #111827;   /* Texto oscuro */
+}
+
+/* Base */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+}
+
+/* Componentes reutilizables */
+@layer components {
+  /* Tarjetas limpias */
+  .card {
+    @apply rounded-xl border border-slate-200 bg-white p-4 shadow-sm;
+  }
+
+  /* Inputs minimalistas */
+  .input {
+    @apply w-full border border-slate-300 rounded-lg px-3 py-2 text-sm text-slate-800
+           focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-green-600;
+  }
+
+  /* Botones base */
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-semibold transition;
+  }
+
+  /* Botón primario (VERDE institucional) */
+  .btn-primary {
+    background-color: #166534; /* Verde institucional */
+    color: #ffffff;
+  }
+
+  .btn-primary:hover {
+    background-color: #15803d; /* Hover más oscuro */
+  }
+
+  /* Botón secundario gris */
+  .btn-secondary {
+    @apply bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200;
+  }
+
+  /* Utilidades de título/subtítulo opcionales */
+  .title {
+    @apply text-3xl font-extrabold text-slate-900;
+  }
+
+  .subtitle {
+    @apply text-lg text-slate-600;
+  }
+}
