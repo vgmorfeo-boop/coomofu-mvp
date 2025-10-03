@@ -1,56 +1,58 @@
 // app/search/page.tsx
-'use client';
+import { listTrips } from "@/lib/data/trips";
+// ... (tus imports actuales)
 
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
+export default function SearchPage({
+  searchParams,
+}: {
+  searchParams: { origin?: string; destination?: string; date?: string; passengers?: string };
+}) {
+  const origin = searchParams.origin ?? "Bogotá";
+  const destination = searchParams.destination ?? "Girardot";
+  const date = searchParams.date ?? new Date().toISOString().slice(0, 10);
+  const passengers = Number(searchParams.passengers ?? "1");
 
-// Fuerza render dinámico (evita el intento de export estático)
-export const dynamic = 'force-dynamic';
+  // ⬇️ NUEVO: genera muchos horarios (cada 60 min 05:00–21:00)
+  const trips = listTrips(origin, destination, date, {
+    startHour: 5,
+    endHour: 21,
+    stepMinutes: 60,
+  });
 
-function SearchResults() {
-  const params = useSearchParams();
-  const origin = params.get('origin') ?? '';
-  const destination = params.get('destination') ?? '';
-  const date = params.get('date') ?? '';
-  const passengers = Number(params.get('passengers') ?? '1');
-
-  // Aquí arma tus resultados como ya lo tenías (mock/trips filtrados, etc.)
-  // Por ahora dejo una UI mínima de ejemplo:
+  // ...tu render actual (cards/lista). Ejemplo:
   return (
-    <div className="space-y-6 max-w-5xl mx-auto p-6">
-      <h1 className="text-2xl font-semibold">
-        Resultados: {origin || '—'} → {destination || '—'} ({date || '—'}) · Pasajeros: {passengers}
+    <div className="container mx-auto px-4 py-6">
+      <h1 className="text-2xl font-semibold mb-4">
+        Resultados: {origin} → {destination} ({date})
       </h1>
 
-      {/* Ejemplo: lista de “viajes” */}
       <div className="space-y-4">
-        {[{ id: 'T-BOG-GIR-0700', time: '07:00', price: 28000 }].map((trip) => (
-          <div key={trip.id} className="flex items-center justify-between rounded-lg border p-4">
+        {trips.map((trip) => (
+          // si usas un componente TripCard, deja lo tuyo:
+          // <TripCard key={trip.id} trip={trip} passengers={passengers} />
+          <div key={trip.id} className="rounded border p-4 flex items-center justify-between">
             <div>
-              <div className="font-medium">{origin} → {destination}</div>
-              <div className="text-sm text-slate-500">Sale {trip.time}</div>
+              <div className="font-medium">
+                {origin} → {destination}
+              </div>
+              <div className="text-sm text-slate-600">
+                Sale {trip.departure} · {trip.duration} · {trip.seats} disp.
+              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-lg font-semibold">$ {trip.price.toLocaleString('es-CO')}</div>
-              <Link
-                href={`/trip/${trip.id}?date=${encodeURIComponent(date)}&passengers=${passengers}`}
-                className="btn btn-primary"
+            <div className="text-right">
+              <div className="text-lg font-semibold">
+                ${trip.price.toLocaleString("es-CO")}
+              </div>
+              <a
+                className="btn btn-primary inline-block mt-2"
+                href={`/trip/${trip.id}?date=${date}&passengers=${passengers}`}
               >
                 Elegir asientos
-              </Link>
+              </a>
             </div>
           </div>
         ))}
       </div>
     </div>
-  );
-}
-
-export default function Page() {
-  return (
-    <Suspense fallback={<div className="max-w-5xl mx-auto p-6">Cargando resultados…</div>}>
-      <SearchResults />
-    </Suspense>
   );
 }

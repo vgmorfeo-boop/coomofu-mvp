@@ -1,66 +1,135 @@
-export const stations = [
-  "Bogotá",
-  "Funza",
-  "Mosquera",
-  "La Mesa",
-  "Tocaima",
-  "Girardot",
-  "Madrid",
-] as const;
-
-export type Station = typeof stations[number];
-
+// lib/data/trips.ts
 export type Trip = {
-  id: string;
-  origin: Station;
-  destination: Station;
-  date: string; // YYYY-MM-DD
-  departTime: string; // HH:mm
-  durationMin: number;
-  price: number; // COP
-  totalSeats: number;
-  takenSeats: number[]; // seat numbers
+  id: string;                // p.ej. T-BOG-GIR-0700
+  origin: string;            // "Bogotá"
+  destination: string;       // "Girardot"
+  date: string;              // "2025-10-02"
+  departure: string;         // "07:00"
+  duration: string;          // "4h 30m"
+  price: number;             // 28000
+  seats: number;             // 12..36 (disponibles)
 };
 
-// Simple demo dataset for the next 7 days
-function addDays(d: Date, days: number) {
-  const copy = new Date(d.getTime());
-  copy.setDate(copy.getDate() + days);
-  return copy.toISOString().slice(0, 10);
+const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+
+function slugCity(name: string) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase()
+    .slice(0, 3);
 }
 
-const today = new Date();
-const d0 = addDays(today, 0);
-const d1 = addDays(today, 1);
-const d2 = addDays(today, 2);
-const d3 = addDays(today, 3);
-
-export const trips: Trip[] = [
-  { id: "T-BOG-GIR-0700", origin: "Bogotá", destination: "Girardot", date: d0, departTime: "07:00", durationMin: 210, price: 28000, totalSeats: 40, takenSeats: [1,2,3,8,10,16,22,33] },
-  { id: "T-BOG-GIR-0900", origin: "Bogotá", destination: "Girardot", date: d0, departTime: "09:00", durationMin: 210, price: 28000, totalSeats: 40, takenSeats: [4,5,6,9,13,17,24,27,31] },
-  { id: "T-BOG-GIR-1300", origin: "Bogotá", destination: "Girardot", date: d0, departTime: "13:00", durationMin: 210, price: 28000, totalSeats: 40, takenSeats: [2,7,12,14,20,21,29,37] },
-
-  { id: "T-FUN-GIR-0800", origin: "Funza", destination: "Girardot", date: d0, departTime: "08:00", durationMin: 195, price: 25000, totalSeats: 36, takenSeats: [3,5,7,9,11,13,15,18,22,36] },
-  { id: "T-FUN-GIR-1100", origin: "Funza", destination: "Girardot", date: d0, departTime: "11:00", durationMin: 195, price: 25000, totalSeats: 36, takenSeats: [1,2,4,6,8,12,16,20,24,28,32] },
-
-  { id: "T-BOG-LAM-0700", origin: "Bogotá", destination: "La Mesa", date: d0, departTime: "07:00", durationMin: 140, price: 18000, totalSeats: 30, takenSeats: [1,4,8,12,16,20,24,28] },
-  { id: "T-BOG-LAM-1000", origin: "Bogotá", destination: "La Mesa", date: d0, departTime: "10:00", durationMin: 140, price: 18000, totalSeats: 30, takenSeats: [3,6,9,15,18,21,27] },
-
-  // Add trips for next days
-  { id: "T-BOG-GIR-0700-D1", origin: "Bogotá", destination: "Girardot", date: d1, departTime: "07:00", durationMin: 210, price: 28000, totalSeats: 40, takenSeats: [1,2,3,8,9,12,16,20,27,33] },
-  { id: "T-BOG-GIR-0900-D1", origin: "Bogotá", destination: "Girardot", date: d1, departTime: "09:00", durationMin: 210, price: 28000, totalSeats: 40, takenSeats: [5,6,7,9,13,15,17,24,31] },
-
-  { id: "T-FUN-GIR-0800-D2", origin: "Funza", destination: "Girardot", date: d2, departTime: "08:00", durationMin: 195, price: 25000, totalSeats: 36, takenSeats: [2,4,6,8,10,12,14,16,18,20,34] },
-
-  { id: "T-BOG-TOC-0630-D3", origin: "Bogotá", destination: "Tocaima", date: d3, departTime: "06:30", durationMin: 180, price: 23000, totalSeats: 32, takenSeats: [1,2,3,30,31,32] },
-];
-
-export function searchTrips(origin: string, destination: string, date: string) {
-  return trips
-    .filter(t => t.origin === origin && t.destination === destination && t.date === date)
-    .sort((a, b) => a.departTime.localeCompare(b.departTime));
+/**
+ * Genera un ID estable tipo: T-BOG-GIR-0700
+ */
+export function makeTripId(origin: string, destination: string, hhmm: string) {
+  return `T-${slugCity(origin)}-${slugCity(destination)}-${hhmm.replace(":", "")}`;
 }
 
-export function getTripById(id: string) {
-  return trips.find(t => t.id === id) || null;
+/**
+ * Genera horarios entre startHour y endHour, cada stepMinutes
+ */
+function generateTimeSlots(
+  startHour = 5,
+  endHour = 21,
+  stepMinutes = 60
+): string[] {
+  const res: string[] = [];
+  let minutes = startHour * 60;
+  const last = endHour * 60;
+
+  while (minutes <= last) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    res.push(`${pad(h)}:${pad(m)}`);
+    minutes += stepMinutes;
+  }
+  return res;
+}
+
+/**
+ * Precio base “bonito” + ajuste por hora para variar un poco.
+ */
+function computePrice(base = 28000, hhmm: string) {
+  const hour = parseInt(hhmm.slice(0, 2), 10);
+  // Ej: mañana más barato, tarde sube un poco
+  const delta =
+    hour < 8 ? -2000 : hour < 12 ? 0 : hour < 18 ? 3000 : 1000;
+  return Math.max(20000, base + delta);
+}
+
+/**
+ * Asientos disponibles pseudoaleatorios pero estables por (ruta+fecha+hora)
+ */
+function stableSeats(origin: string, dest: string, date: string, hhmm: string) {
+  const seedStr = `${origin}-${dest}-${date}-${hhmm}`;
+  let hash = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    hash = (hash * 31 + seedStr.charCodeAt(i)) | 0;
+  }
+  // 18..36
+  return 18 + Math.abs(hash % 19);
+}
+
+/**
+ * Devuelve una lista “amplia” de viajes para mostrar en /search
+ * - Por defecto: cada 60 minutos de 05:00 a 21:00
+ */
+export function listTrips(
+  origin: string,
+  destination: string,
+  date: string,
+  opts?: {
+    startHour?: number;
+    endHour?: number;
+    stepMinutes?: number;
+  }
+): Trip[] {
+  const { startHour = 5, endHour = 21, stepMinutes = 60 } = opts || {};
+  const times = generateTimeSlots(startHour, endHour, stepMinutes);
+
+  const duration = "4h 30m";
+  return times.map((hhmm) => {
+    const id = makeTripId(origin, destination, hhmm);
+    return {
+      id,
+      origin,
+      destination,
+      date,
+      departure: hhmm,
+      duration,
+      price: computePrice(28000, hhmm),
+      seats: stableSeats(origin, destination, date, hhmm),
+    };
+  });
+}
+
+/**
+ * Reconstruye un Trip a partir de un id + fecha (útil en /trip/[id])
+ * Soporta ID tipo: T-BOG-GIR-0700
+ */
+export function getTripById(id: string, date: string): Trip | null {
+  const m = id.match(/^T-([A-Z]{3})-([A-Z]{3})-(\d{4})$/);
+  if (!m) return null;
+
+  const [, o3, d3, hhmmRaw] = m;
+  const hhmm = `${hhmmRaw.slice(0, 2)}:${hhmmRaw.slice(2)}`;
+
+  // Nota: Si quieres nombres “bonitos” en base a las siglas, puedes mapear aquí:
+  // Por simplicidad, dejamos las siglas tal cual; ajusta si quieres nombres completos.
+  const origin = o3;
+  const destination = d3;
+
+  return {
+    id,
+    origin,
+    destination,
+    date,
+    departure: hhmm,
+    duration: "4h 30m",
+    price: computePrice(28000, hhmm),
+    seats: stableSeats(origin, destination, date, hhmm),
+  };
 }
