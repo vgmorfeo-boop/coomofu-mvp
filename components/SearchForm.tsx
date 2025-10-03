@@ -1,47 +1,54 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function SearchForm() {
   const router = useRouter();
 
-  const [origin, setOrigin] = useState('Bogotá');
-  const [destination, setDestination] = useState('Girardot');
-  const [date, setDate] = useState<string>(() => {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  });
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
+  const [date, setDate] = useState('');
   const [passengers, setPassengers] = useState<number>(1);
+
+  // hoy como mínimo
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const minDate = `${yyyy}-${mm}-${dd}`;
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const q = new URLSearchParams({
-      origin,
-      destination,
-      date,
+
+    const qs = new URLSearchParams({
+      origin: origin || '',
+      destination: destination || '',
+      date: date || '',
       passengers: String(passengers),
-    }).toString();
-    router.push(`/search?${q}`);
+    });
+    router.push(`/search?${qs.toString()}`);
   }
 
   return (
-    <form onSubmit={onSubmit} className="mx-auto max-w-4xl space-y-4 md:space-y-0 md:grid md:grid-cols-4 md:gap-4">
+    <form
+      onSubmit={onSubmit}
+      className="mx-auto grid w-full max-w-5xl gap-4 rounded-2xl border border-slate-200 bg-white/90 p-4 sm:grid-cols-2 lg:grid-cols-5"
+    >
       {/* Origen */}
       <input
-        className="input"
+        aria-label="Origen"
         placeholder="Origen"
+        className="h-11 w-full rounded-xl border border-slate-300 px-3 outline-none focus:border-coomofu-blue"
         value={origin}
         onChange={(e) => setOrigin(e.target.value)}
       />
 
       {/* Destino */}
       <input
-        className="input"
+        aria-label="Destino"
         placeholder="Destino"
+        className="h-11 w-full rounded-xl border border-slate-300 px-3 outline-none focus:border-coomofu-blue"
         value={destination}
         onChange={(e) => setDestination(e.target.value)}
       />
@@ -49,27 +56,32 @@ export default function SearchForm() {
       {/* Fecha */}
       <input
         type="date"
-        className="input"
+        aria-label="Fecha"
+        className="h-11 w-full rounded-xl border border-slate-300 px-3 outline-none focus:border-coomofu-blue"
         value={date}
         onChange={(e) => setDate(e.target.value)}
+        min={minDate}
       />
 
-      {/* Pasajeros (SELECT, confiable en móvil) */}
+      {/* Pasajeros — SELECT nativo (mejor en móvil) */}
       <select
-        className="input"
         aria-label="Pasajeros"
+        className="h-11 w-full cursor-pointer rounded-xl border border-slate-300 bg-white px-3 outline-none focus:border-coomofu-blue"
         value={passengers}
         onChange={(e) => setPassengers(Number(e.target.value))}
       >
-        {[1,2,3,4,5,6].map((n) => (
+        {[1,2,3,4,5,6,7,8,9,10].map((n) => (
           <option key={n} value={n}>{n}</option>
         ))}
       </select>
 
       {/* Botón */}
-      <div className="md:col-span-4">
-        <button type="submit" className="btn btn-primary w-full">Buscar buses</button>
-      </div>
+      <button
+        type="submit"
+        className="h-11 w-full rounded-xl bg-[#166534] text-white transition hover:opacity-95 lg:col-span-1 sm:col-span-2"
+      >
+        Buscar buses
+      </button>
     </form>
   );
 }
